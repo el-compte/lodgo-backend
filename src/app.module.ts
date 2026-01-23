@@ -9,6 +9,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { EnvironmentService } from './config/environment.service';
 import { PropertyModule } from './property/property.module';
 import configuration from './config/configuration';
+import { HostawayWebhookModule } from './webhooks/hostaway/hostaway-webhook.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import configuration from './config/configuration';
     UserModule,
     AuthModule,
     PropertyModule,
+    HostawayWebhookModule,
   ],
   controllers: [AppController],
   providers: [AppService, EnvironmentService],

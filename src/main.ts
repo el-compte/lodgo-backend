@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as express from 'express';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -21,6 +22,23 @@ async function bootstrap() {
   // Add global logging interceptor
   app.useGlobalInterceptors(new LoggingInterceptor());
 
+  /**
+   * Middleware to capture raw body for webhook signature verification
+   * @notes Important for Hostaway webhook signature validation
+   * @see src/webhooks/hostaway/guards/hostaway-signature.guard.ts
+   * @important
+   */
+  app.use(
+    express.json({
+      verify: (
+        req: express.Request & { rawBody?: Buffer },
+        _res: express.Response,
+        buf: Buffer,
+      ) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   const config = new DocumentBuilder()
     .setTitle('API')
     .setDescription('API description')
