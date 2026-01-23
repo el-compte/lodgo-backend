@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { HostawayWebhookService } from './hostaway-webhook.service';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { HostawaySignatureGuard } from './guards/hostaway-signature.guard';
@@ -14,6 +15,7 @@ export class HostawayWebhookController {
   constructor(private readonly webhookService: HostawayWebhookService) {}
 
   @Post()
+  @Throttle({ hostaway: { limit: 100, ttl: 60000 } })
   @UseGuards(HostawaySignatureGuard)
   @HttpCode(200)
   /**
