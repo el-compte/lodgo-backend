@@ -15,7 +15,12 @@ export class HostawayWebhookController {
   constructor(private readonly webhookService: HostawayWebhookService) {}
 
   @Post()
-  @Throttle({ hostaway: { limit: 100, ttl: 60000 } })
+  @Throttle({
+    hostaway: {
+      limit: Number.parseInt(process.env.RATE_LIMITER_LIMIT || '100', 10),
+      ttl: Number.parseInt(process.env.RATE_LIMITER_TTL || '60000', 10),
+    },
+  })
   @UseGuards(HostawaySignatureGuard)
   @HttpCode(200)
   /**

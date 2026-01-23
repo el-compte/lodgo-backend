@@ -8,8 +8,12 @@ import { HostawayWebhookService } from './hostaway-webhook.service';
     ThrottlerModule.forRoot([
       {
         name: 'hostaway',
-        ttl: 60000, // 60 seconds
-        limit: 100, // 100 requests per ttl
+        ttl: process.env.RATE_LIMITER_TTL
+          ? Number.parseInt(process.env.RATE_LIMITER_TTL, 10)
+          : 60000,
+        limit: process.env.RATE_LIMITER_LIMIT
+          ? Number.parseInt(process.env.RATE_LIMITER_LIMIT, 10)
+          : 100,
       },
     ]),
   ],
