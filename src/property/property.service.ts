@@ -5,6 +5,7 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { IProperty } from './entities/property.entity';
 import { PropertyPmsConfig } from './entities/pms-config.entiry';
+import { AddPmsConfigDto } from './dto/add-pms-config.dto';
 
 @Injectable()
 export class PropertyService {
@@ -200,7 +201,7 @@ export class PropertyService {
    */
   async addPmsConfig(
     propertyId: string,
-    pmsConfig: PropertyPmsConfig,
+    pmsConfig: AddPmsConfigDto,
   ): Promise<IProperty> {
     const property = await this.findOne(propertyId);
 
@@ -211,10 +212,18 @@ export class PropertyService {
 
     if (existingConfigIndex !== -1) {
       // Update existing config
-      property.pmsConfigs[existingConfigIndex] = pmsConfig;
+      property.pmsConfigs[existingConfigIndex] = {
+        ...property.pmsConfigs[existingConfigIndex],
+        ...pmsConfig,
+        enabled:
+          pmsConfig.enabled ?? property.pmsConfigs[existingConfigIndex].enabled,
+      };
     } else {
       // Add new config
-      property.pmsConfigs.push(pmsConfig);
+      property.pmsConfigs.push({
+        ...pmsConfig,
+        enabled: pmsConfig.enabled ?? true,
+      } as PropertyPmsConfig);
     }
 
     return property.save();
@@ -245,10 +254,12 @@ export class PropertyService {
       );
     }
 
-    // Update the config
+    // Update the config while preserving the provider
+    const currentConfig = property.pmsConfigs[configIndex];
     property.pmsConfigs[configIndex] = {
-      ...property.pmsConfigs[configIndex],
-      ...updates,
+      provider: currentConfig.provider,
+      externalPropertyId: updates.externalPropertyId ?? currentConfig.externalPropertyId,
+      enabled: updates.enabled ?? currentConfig.enabled,
     };
 
     return property.save();

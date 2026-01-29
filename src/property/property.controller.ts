@@ -141,7 +141,9 @@ export class PropertyController {
   }
 
   @Get(':id/webhook-eligibility')
-  @ApiOperation({ summary: 'Check if property is eligible for webhook processing' })
+  @ApiOperation({
+    summary: 'Check if property is eligible for webhook processing',
+  })
   @ApiParam({ name: 'id', description: 'Property ID' })
   @ApiResponse({
     status: 200,
@@ -155,7 +157,8 @@ export class PropertyController {
     },
   })
   async checkWebhookEligibility(@Param('id') id: string) {
-    const eligible = await this.propertyService.isPropertyEligibleForWebhook(id);
+    const eligible =
+      await this.propertyService.isPropertyEligibleForWebhook(id);
     return {
       eligible,
       propertyId: id,
