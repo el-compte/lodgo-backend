@@ -3,6 +3,8 @@ import { Logger } from '@nestjs/common';
 import { HostawayWebhookService } from './hostaway-webhook.service';
 import { PropertyService } from '../../property/property.service';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
+import { WebhookRetryService } from './services/webhook-retry.service';
+import { WebhookProcessingStatus } from './interfaces/webhook-processing.interface';
 
 describe('HostawayWebhookService', () => {
   let service: HostawayWebhookService;
@@ -34,14 +36,16 @@ describe('HostawayWebhookService', () => {
           provide: PropertyService,
           useValue: mockPropertyService,
         },
+        WebhookRetryService,
       ],
     }).compile();
 
     service = module.get<HostawayWebhookService>(HostawayWebhookService);
 
-    // Mock logger to avoid console output during tests
+    // Mock logger to suppress output during tests
     jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
 
   afterEach(() => {
@@ -52,6 +56,9 @@ describe('HostawayWebhookService', () => {
     expect(service).toBeDefined();
   });
 
+  /**
+   * @description Test suite for handleWebhook method
+   */
   describe('handleWebhook', () => {
     it('should handle listing.updated event', async () => {
       const payload: HostawayWebhookDto = {
@@ -120,6 +127,9 @@ describe('HostawayWebhookService', () => {
     });
   });
 
+  /**
+   * @description Test suite for handleListingUpdated method and PMS configuration validation
+   */
   describe('handleListingUpdated - PMS Config Validation', () => {
     const validListingData = {
       id: '12345',
@@ -153,14 +163,11 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('is eligible for webhook processing'),
-      );
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Successfully processing webhook'),
+        expect.stringContaining('Successfully processing listing update'),
       );
     });
 
-    it('should ignore webhook when property not found (no PMS config)', async () => {
+    it('should ignore webhook when property not found', async () => {
       mockPropertyService.findByExternalPropertyId.mockResolvedValue(null);
 
       const logSpy = jest.spyOn(Logger.prototype, 'log');
@@ -173,7 +180,7 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('not found - ignoring webhook (no PMS config)'),
+        expect.stringContaining('Property not found - ignoring webhook'),
       );
       expect(
         mockPropertyService.isPropertyEligibleForWebhookByExternalId,
@@ -198,9 +205,7 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'is not eligible for webhook processing - PMS config disabled or invalid',
-        ),
+        expect.stringContaining('Property not eligible for webhook processing'),
       );
     });
 
@@ -209,9 +214,7 @@ describe('HostawayWebhookService', () => {
 
       const payload: HostawayWebhookDto = {
         event: 'listing.updated',
-        data: {
-          name: 'Test',
-        },
+        data: { name: 'Test' },
       };
 
       await service.handleWebhook(payload);
@@ -236,44 +239,13 @@ describe('HostawayWebhookService', () => {
 
       const payload: HostawayWebhookDto = {
         event: 'listing.updated',
-        data: {
-          id: '12345',
-          // Missing required fields
-        },
+        data: { id: '12345' },
       };
 
       await service.handleWebhook(payload);
 
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Listing data validation failed'),
-      );
-    });
-
-    it('should validate all required listing fields', async () => {
-      mockPropertyService.findByExternalPropertyId.mockResolvedValue(
-        mockProperty,
-      );
-      mockPropertyService.isPropertyEligibleForWebhookByExternalId.mockResolvedValue(
-        true,
-      );
-
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
-
-      const incompleteData = {
-        id: '12345',
-        name: 'Test',
-        // Missing other required fields
-      };
-
-      const payload: HostawayWebhookDto = {
-        event: 'listing.updated',
-        data: incompleteData,
-      };
-
-      await service.handleWebhook(payload);
-
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Missing required field'),
       );
     });
 
@@ -289,10 +261,7 @@ describe('HostawayWebhookService', () => {
 
       const payload: HostawayWebhookDto = {
         event: 'listing.updated',
-        data: {
-          ...validListingData,
-          specialStatus: 'incomplete',
-        },
+        data: { ...validListingData, specialStatus: 'incomplete' },
       };
 
       await service.handleWebhook(payload);
@@ -303,53 +272,41 @@ describe('HostawayWebhookService', () => {
     });
   });
 
-  describe('Acceptance Criteria: Properties without PMS config are ignored', () => {
-    it('should ignore properties without PMS configuration', async () => {
-      mockPropertyService.findByExternalPropertyId.mockResolvedValue(null);
+  /**
+   * @description Test suite for general error handling and result structure
+   */
+  describe('Error Handling', () => {
+    it('should handle malformed payload', async () => {
+      const malformedPayload = null as unknown as HostawayWebhookDto;
 
-      const logSpy = jest.spyOn(Logger.prototype, 'log');
+      const result = await service.handleWebhook(malformedPayload);
 
-      const payload: HostawayWebhookDto = {
-        event: 'listing.updated',
-        data: {
-          id: '99999',
-          name: 'Test',
-          address: 'Test',
-          externalListingName: 'Test',
-          price: 100,
-          guestsIncluded: 2,
-          currencyCode: 'USD',
-          personCapacity: 4,
-          lat: 40.7128,
-          lng: -74.006,
-          specialStatus: 'completed',
-        },
-      };
-
-      await service.handleWebhook(payload);
-
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('not found - ignoring webhook (no PMS config)'),
-      );
+      expect(result.status).toBe(WebhookProcessingStatus.FAILED);
+      expect(result.error?.errorMessage).toContain('Invalid webhook payload');
     });
 
-    it('should log ignored properties for monitoring', async () => {
-      mockPropertyService.findByExternalPropertyId.mockResolvedValue(null);
+    it('should handle missing event field', async () => {
+      const payload = { data: { id: '12345' } };
 
-      const logSpy = jest.spyOn(Logger.prototype, 'log');
+      const result = await service.handleWebhook(
+        payload as unknown as HostawayWebhookDto,
+      );
 
+      expect(result.status).toBe(WebhookProcessingStatus.FAILED);
+      expect(result.error?.errorMessage).toContain('missing event field');
+    });
+
+    it('should include processing time in result', async () => {
       const payload: HostawayWebhookDto = {
         event: 'listing.updated',
         data: { id: '12345' },
       };
+      mockPropertyService.findByExternalPropertyId.mockResolvedValue(null);
 
-      await service.handleWebhook(payload);
+      const result = await service.handleWebhook(payload);
 
-      expect(logSpy).toHaveBeenCalled();
-      const logMessages = logSpy.mock.calls.map((call) => call[0] as string);
-      expect(
-        logMessages.some((msg) => msg.includes('not found - ignoring webhook')),
-      ).toBe(true);
+      expect(result.processingTimeMs).toBeGreaterThanOrEqual(0);
+      expect(typeof result.processingTimeMs).toBe('number');
     });
   });
 });

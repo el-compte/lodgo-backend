@@ -255,7 +255,6 @@ export class PropertyService {
       );
     }
 
-    // Update the config while preserving the provider
     const currentConfig = property.pmsConfigs[configIndex];
     property.pmsConfigs[configIndex] = {
       provider: currentConfig.provider,
@@ -280,7 +279,6 @@ export class PropertyService {
   ): Promise<IProperty> {
     const property = await this.findOne(propertyId);
 
-    // Filter out the config for the specified provider
     property.pmsConfigs = property.pmsConfigs.filter(
       (c) => c.provider !== provider,
     );
@@ -297,5 +295,30 @@ export class PropertyService {
   async getAllPmsConfigs(propertyId: string): Promise<PropertyPmsConfig[]> {
     const property = await this.findOne(propertyId);
     return property.pmsConfigs || [];
+  }
+
+  /**
+   * Sync listing data from a PMS webhook to update property information
+   * Updates the property name and address from the listing data
+   * @param propertyId - Property ID
+   * @param listingData - Listing data from the PMS webhook
+   * @returns Updated property document
+   * @throws NotFoundException if property not found
+   */
+  async syncListingData(
+    propertyId: string,
+    listingData: Record<string, string>,
+  ): Promise<IProperty> {
+    const property = await this.findOne(propertyId);
+
+    if (listingData.name) {
+      property.name = listingData.name;
+    }
+
+    if (listingData.address) {
+      property.address = listingData.address;
+    }
+
+    return property.save();
   }
 }
