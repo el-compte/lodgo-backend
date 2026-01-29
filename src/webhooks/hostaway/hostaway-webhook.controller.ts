@@ -3,7 +3,7 @@ import { HostawayWebhookService } from './hostaway-webhook.service';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { HostawaySignatureGuard } from './guards/hostaway-signature.guard';
 import { WebhookRateLimitGuard } from './guards/webhook-rate-limit.guard';
-import configuration from 'src/config/configuration';
+import configuration from '../../config/configuration';
 
 @Controller('webhooks/hostaway')
 /**
