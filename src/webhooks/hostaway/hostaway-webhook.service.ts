@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { HostawayEvent, mapHostawayEvent } from './hostaway-event.mapper';
-import { PropertyService } from 'src/property/property.service';
+import { PropertyService } from '../../property/property.service';
 
 @Injectable()
 /**
@@ -65,7 +65,7 @@ export class HostawayWebhookService {
   private async handleListingUpdated(data: any): Promise<void> {
     // Extract external property ID from webhook payload
     const externalPropertyId = data?.id?.toString();
-    
+
     if (!externalPropertyId) {
       this.logger.warn('External property ID missing in webhook payload');
       return;
