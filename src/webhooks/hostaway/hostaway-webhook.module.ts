@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { HostawayWebhookController } from './hostaway-webhook.controller';
 import { HostawayWebhookService } from './hostaway-webhook.service';
+import { PropertyModule } from 'src/property/property.module';
 
 @Module({
+  imports: [PropertyModule],
   controllers: [HostawayWebhookController],
   providers: [HostawayWebhookService],
 })
