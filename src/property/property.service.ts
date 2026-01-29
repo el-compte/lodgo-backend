@@ -38,11 +38,11 @@ export class PropertyService {
    */
   async findOne(id: string): Promise<IProperty> {
     const property = await this.propertyModel.findById(id).exec();
-    
+
     if (!property) {
       throw new NotFoundException(`Property with ID ${id} not found`);
     }
-    
+
     return property;
   }
 
@@ -156,7 +156,7 @@ export class PropertyService {
 
       return hasValidConfig;
     } catch (error) {
-      // Property not found or other error
+      console.error(`Error checking property eligibility: ${error}`);
       return false;
     }
   }
@@ -189,5 +189,100 @@ export class PropertyService {
 
     // Check if the config is enabled
     return config.enabled === true;
+  }
+
+  /**
+   * Add a PMS configuration to a property
+   * @param propertyId - Property ID
+   * @param pmsConfig - PMS configuration to add
+   * @returns Updated property document
+   * @throws NotFoundException if property not found
+   */
+  async addPmsConfig(
+    propertyId: string,
+    pmsConfig: PropertyPmsConfig,
+  ): Promise<IProperty> {
+    const property = await this.findOne(propertyId);
+
+    // Check if a config for this provider already exists
+    const existingConfigIndex = property.pmsConfigs.findIndex(
+      (c) => c.provider === pmsConfig.provider,
+    );
+
+    if (existingConfigIndex !== -1) {
+      // Update existing config
+      property.pmsConfigs[existingConfigIndex] = pmsConfig;
+    } else {
+      // Add new config
+      property.pmsConfigs.push(pmsConfig);
+    }
+
+    return property.save();
+  }
+
+  /**
+   * Update a PMS configuration for a property
+   * @param propertyId - Property ID
+   * @param provider - PMS provider name
+   * @param updates - Partial PMS config updates
+   * @returns Updated property document
+   * @throws NotFoundException if property or config not found
+   */
+  async updatePmsConfig(
+    propertyId: string,
+    provider: string,
+    updates: Partial<PropertyPmsConfig>,
+  ): Promise<IProperty> {
+    const property = await this.findOne(propertyId);
+
+    const configIndex = property.pmsConfigs.findIndex(
+      (c) => c.provider === provider,
+    );
+
+    if (configIndex === -1) {
+      throw new NotFoundException(
+        `PMS config for provider ${provider} not found in property ${propertyId}`,
+      );
+    }
+
+    // Update the config
+    property.pmsConfigs[configIndex] = {
+      ...property.pmsConfigs[configIndex],
+      ...updates,
+    };
+
+    return property.save();
+  }
+
+  /**
+   * Remove a PMS configuration from a property
+   * @param propertyId - Property ID
+   * @param provider - PMS provider name
+   * @returns Updated property document
+   * @throws NotFoundException if property not found
+   */
+  async removePmsConfig(
+    propertyId: string,
+    provider: string,
+  ): Promise<IProperty> {
+    const property = await this.findOne(propertyId);
+
+    // Filter out the config for the specified provider
+    property.pmsConfigs = property.pmsConfigs.filter(
+      (c) => c.provider !== provider,
+    );
+
+    return property.save();
+  }
+
+  /**
+   * Get all PMS configurations for a property
+   * @param propertyId - Property ID
+   * @returns Array of PMS configurations
+   * @throws NotFoundException if property not found
+   */
+  async getAllPmsConfigs(propertyId: string): Promise<PropertyPmsConfig[]> {
+    const property = await this.findOne(propertyId);
+    return property.pmsConfigs || [];
   }
 }
