@@ -1,5 +1,5 @@
 import { Document, Schema } from 'mongoose';
-import { PropertyPmsConfig, PmsConfigSchema } from './pms-config.entiry';
+import { PropertyPmsConfig, PmsConfigSchema } from './pms-config.entity';
 
 /**
  * Property Interface

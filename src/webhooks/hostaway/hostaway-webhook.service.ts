@@ -163,7 +163,7 @@ export class HostawayWebhookService {
     // Check status completed
     if (specialStatus?.toLowerCase() !== 'completed') {
       this.logger.warn(
-        `Listing status is not completed: ${listing.data.specialStatus}`,
+        `Listing status is not completed: ${specialStatus || 'undefined'}`,
       );
       return false;
     }

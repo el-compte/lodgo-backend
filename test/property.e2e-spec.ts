@@ -5,7 +5,7 @@ import { AppModule } from '../src/app.module';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IProperty } from '../src/property/entities/property.entity';
-import { PropertyPmsConfig } from '../src/property/entities/pms-config.entiry';
+import { PropertyPmsConfig } from '../src/property/entities/pms-config.entity';
 import type { Server } from 'node:http';
 
 interface PropertyResponse {

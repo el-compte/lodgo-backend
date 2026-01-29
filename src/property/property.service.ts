@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CreatePropertyDto } from './dto/create-property.dto';
 import { UpdatePropertyDto } from './dto/update-property.dto';
 import { IProperty } from './entities/property.entity';
-import { PropertyPmsConfig } from './entities/pms-config.entiry';
+import { PropertyPmsConfig } from './entities/pms-config.entity';
 import { AddPmsConfigDto } from './dto/add-pms-config.dto';
 
 @Injectable()
 export class PropertyService {
+  /** Logger instance for PropertyService */
+  private readonly logger = new Logger(PropertyService.name);
+
   constructor(
     @InjectModel('Property') private readonly propertyModel: Model<IProperty>,
   ) {}
@@ -148,16 +151,14 @@ export class PropertyService {
       }
 
       // Check if at least one PMS config is valid and enabled
-      const hasValidConfig = property.pmsConfigs.some(
+      return property.pmsConfigs.some(
         (config) =>
           config.provider &&
           config.externalPropertyId &&
           config.enabled === true,
       );
-
-      return hasValidConfig;
     } catch (error) {
-      console.error(`Error checking property eligibility: ${error}`);
+      this.logger.error(`Error checking property eligibility`, error);
       return false;
     }
   }
