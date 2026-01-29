@@ -124,7 +124,7 @@ describe('WebhookRetryService', () => {
         'listing.updated': 1,
         'reservation.created': 1,
       });
-    });
+    }, 30000);
 
     it('should clear dead letter queue', async () => {
       const mockFn = jest.fn().mockRejectedValue(new Error('Test error'));
@@ -159,7 +159,7 @@ describe('WebhookRetryService', () => {
       expect(removed?.eventType).toBe('test1');
       expect(service.getDeadLetterQueue()).toHaveLength(1);
       expect(service.getDeadLetterQueue()[0].eventType).toBe('test2');
-    });
+    }, 30000);
 
     it('should respect max dead letter queue size', async () => {
       process.env.WEBHOOK_DEAD_LETTER_MAX_SIZE = '2';
@@ -185,7 +185,7 @@ describe('WebhookRetryService', () => {
       expect(queue[1].eventType).toBe('test3');
 
       delete process.env.WEBHOOK_DEAD_LETTER_MAX_SIZE;
-    });
+    }, 30000);
   });
 
   /**

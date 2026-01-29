@@ -13,6 +13,7 @@ describe('HostawayWebhookService', () => {
     findByExternalPropertyId: jest.fn(),
     isPropertyEligibleForWebhookByExternalId: jest.fn(),
     findOne: jest.fn(),
+    syncListingData: jest.fn(),
   };
 
   const mockProperty = {
@@ -107,7 +108,10 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(warnSpy).toHaveBeenCalledWith(
-        'Unhandled Hostaway event: unknown.event',
+        expect.objectContaining({
+          message: 'Unhandled event type',
+          eventType: 'unknown.event',
+        }),
       );
     });
 
@@ -152,6 +156,7 @@ describe('HostawayWebhookService', () => {
       mockPropertyService.isPropertyEligibleForWebhookByExternalId.mockResolvedValue(
         true,
       );
+      mockPropertyService.syncListingData.mockResolvedValue(mockProperty);
 
       const logSpy = jest.spyOn(Logger.prototype, 'log');
 
@@ -163,7 +168,9 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Successfully processing listing update'),
+        expect.objectContaining({
+          message: 'Successfully processing listing update',
+        }),
       );
     });
 
@@ -180,7 +187,9 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Property not found - ignoring webhook'),
+        expect.objectContaining({
+          message: 'Property not found - ignoring webhook',
+        }),
       );
       expect(
         mockPropertyService.isPropertyEligibleForWebhookByExternalId,
@@ -205,23 +214,26 @@ describe('HostawayWebhookService', () => {
       await service.handleWebhook(payload);
 
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Property not eligible for webhook processing'),
+        expect.objectContaining({
+          message: 'Property not eligible for webhook processing',
+        }),
       );
     });
 
     it('should warn when external property ID is missing', async () => {
-      const warnSpy = jest.spyOn(Logger.prototype, 'warn');
+      const errorSpy = jest.spyOn(Logger.prototype, 'error');
 
       const payload: HostawayWebhookDto = {
         event: 'listing.updated',
         data: { name: 'Test' },
       };
 
-      await service.handleWebhook(payload);
+      const result = await service.handleWebhook(payload);
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        'External property ID missing in webhook payload',
-      );
+      // The error is logged by the retry service as it retries the webhook
+      expect(errorSpy).toHaveBeenCalled();
+      expect(result.status).toBe(WebhookProcessingStatus.DEAD_LETTER);
+      expect(result.error?.errorMessage).toContain('External property ID');
       expect(
         mockPropertyService.findByExternalPropertyId,
       ).not.toHaveBeenCalled();

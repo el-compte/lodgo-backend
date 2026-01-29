@@ -24,14 +24,7 @@ export class HostawayWebhookService {
     payload: HostawayWebhookDto,
   ): Promise<WebhookProcessingResult> {
     const startTime = Date.now();
-    const eventType = payload.event || 'unknown';
-
-    this.logger.log({
-      message: 'Webhook received',
-      provider: 'hostaway',
-      eventType,
-      timestamp: new Date().toISOString(),
-    });
+    let eventType = 'unknown';
 
     try {
       if (!payload || typeof payload !== 'object') {
@@ -41,6 +34,15 @@ export class HostawayWebhookService {
       if (!payload.event) {
         throw new Error('Invalid webhook payload: missing event field');
       }
+
+      eventType = payload.event || 'unknown';
+
+      this.logger.log({
+        message: 'Webhook received',
+        provider: 'hostaway',
+        eventType,
+        timestamp: new Date().toISOString(),
+      });
 
       const mappedEvent = mapHostawayEvent(payload.event as HostawayEvent);
 
