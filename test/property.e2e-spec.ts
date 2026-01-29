@@ -1,16 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IProperty } from '../src/property/entities/property.entity';
+import { PropertyPmsConfig } from '../src/property/entities/pms-config.entiry';
+import type { Server } from 'node:http';
+
+interface PropertyResponse {
+  _id: string;
+  name: string;
+  address?: string;
+  pmsConfigs: PropertyPmsConfig[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface WebhookEligibilityResponse {
+  eligible: boolean;
+  propertyId: string;
+}
 
 describe('Property E2E Tests', () => {
-  let app: INestApplication<App>;
+  let app: INestApplication;
   let propertyModel: Model<IProperty>;
   let createdPropertyId: string;
+  let httpServer: Server;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -20,6 +36,8 @@ describe('Property E2E Tests', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
     await app.init();
+
+    httpServer = app.getHttpServer() as Server;
 
     propertyModel = moduleFixture.get<Model<IProperty>>(
       getModelToken('Property'),
@@ -48,23 +66,22 @@ describe('Property E2E Tests', () => {
         ],
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post('/property')
         .send(createPropertyDto)
         .expect(201);
 
-      expect(response.body).toBeDefined();
-      expect(response.body.name).toBe(createPropertyDto.name);
-      expect(response.body.address).toBe(createPropertyDto.address);
-      expect(response.body.pmsConfigs).toHaveLength(1);
-      expect(response.body.pmsConfigs[0].provider).toBe('hostaway');
-      expect(response.body.pmsConfigs[0].externalPropertyId).toBe(
-        'e2e-hostaway-12345',
-      );
-      expect(response.body.pmsConfigs[0].enabled).toBe(true);
+      const body = response.body as PropertyResponse;
+      expect(body).toBeDefined();
+      expect(body.name).toBe(createPropertyDto.name);
+      expect(body.address).toBe(createPropertyDto.address);
+      expect(body.pmsConfigs).toHaveLength(1);
+      expect(body.pmsConfigs[0].provider).toBe('hostaway');
+      expect(body.pmsConfigs[0].externalPropertyId).toBe('e2e-hostaway-12345');
+      expect(body.pmsConfigs[0].enabled).toBe(true);
 
       // Store ID for cleanup and other tests
-      createdPropertyId = response.body._id;
+      createdPropertyId = body._id;
     });
 
     it('should create a property with multiple PMS configs', async () => {
@@ -85,17 +102,18 @@ describe('Property E2E Tests', () => {
         ],
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post('/property')
         .send(createPropertyDto)
         .expect(201);
 
-      expect(response.body.pmsConfigs).toHaveLength(2);
-      expect(response.body.pmsConfigs[0].provider).toBe('hostaway');
-      expect(response.body.pmsConfigs[1].provider).toBe('guesty');
+      const body = response.body as PropertyResponse;
+      expect(body.pmsConfigs).toHaveLength(2);
+      expect(body.pmsConfigs[0].provider).toBe('hostaway');
+      expect(body.pmsConfigs[1].provider).toBe('guesty');
 
       // Clean up
-      await propertyModel.findByIdAndDelete(response.body._id);
+      await propertyModel.findByIdAndDelete(body._id);
     });
 
     it('should reject invalid provider', async () => {
@@ -111,10 +129,7 @@ describe('Property E2E Tests', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/property')
-        .send(invalidDto)
-        .expect(400);
+      await request(httpServer).post('/property').send(invalidDto).expect(400);
     });
 
     it('should reject missing externalPropertyId', async () => {
@@ -129,10 +144,7 @@ describe('Property E2E Tests', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/property')
-        .send(invalidDto)
-        .expect(400);
+      await request(httpServer).post('/property').send(invalidDto).expect(400);
     });
   });
 
@@ -144,18 +156,19 @@ describe('Property E2E Tests', () => {
         enabled: true,
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post(`/property/${createdPropertyId}/pms-config`)
         .send(addConfigDto)
         .expect(201);
 
-      expect(response.body.pmsConfigs).toBeDefined();
-      const guestyConfig = response.body.pmsConfigs.find(
+      const body = response.body as PropertyResponse;
+      expect(body.pmsConfigs).toBeDefined();
+      const guestyConfig = body.pmsConfigs.find(
         (config) => config.provider === 'guesty',
       );
       expect(guestyConfig).toBeDefined();
-      expect(guestyConfig.externalPropertyId).toBe('e2e-guesty-67890');
-      expect(guestyConfig.enabled).toBe(true);
+      expect(guestyConfig?.externalPropertyId).toBe('e2e-guesty-67890');
+      expect(guestyConfig?.enabled).toBe(true);
     });
 
     it('should update existing PMS config if provider already exists', async () => {
@@ -165,16 +178,17 @@ describe('Property E2E Tests', () => {
         enabled: false,
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post(`/property/${createdPropertyId}/pms-config`)
         .send(updateConfigDto)
         .expect(201);
 
-      const hostawayConfig = response.body.pmsConfigs.find(
+      const body = response.body as PropertyResponse;
+      const hostawayConfig = body.pmsConfigs.find(
         (config) => config.provider === 'hostaway',
       );
-      expect(hostawayConfig.externalPropertyId).toBe('updated-hostaway-99999');
-      expect(hostawayConfig.enabled).toBe(false);
+      expect(hostawayConfig?.externalPropertyId).toBe('updated-hostaway-99999');
+      expect(hostawayConfig?.enabled).toBe(false);
     });
 
     it('should return 404 for non-existent property', async () => {
@@ -184,7 +198,7 @@ describe('Property E2E Tests', () => {
         enabled: true,
       };
 
-      await request(app.getHttpServer())
+      await request(httpServer)
         .post('/property/507f1f77bcf86cd799439011/pms-config')
         .send(addConfigDto)
         .expect(404);
@@ -193,20 +207,19 @@ describe('Property E2E Tests', () => {
 
   describe('GET /property/:id/pms-config - Get all PMS configs', () => {
     it('should return all PMS configs for a property', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${createdPropertyId}/pms-config`)
         .expect(200);
 
-      expect(Array.isArray(response.body)).toBe(true);
-      expect(response.body.length).toBeGreaterThanOrEqual(2);
-      expect(response.body.every((config) => config.provider)).toBe(true);
-      expect(response.body.every((config) => config.externalPropertyId)).toBe(
-        true,
-      );
+      const body = response.body as PropertyPmsConfig[];
+      expect(Array.isArray(body)).toBe(true);
+      expect(body.length).toBeGreaterThanOrEqual(2);
+      expect(body.every((config) => config.provider)).toBe(true);
+      expect(body.every((config) => config.externalPropertyId)).toBe(true);
     });
 
     it('should return 404 for non-existent property', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .get('/property/507f1f77bcf86cd799439011/pms-config')
         .expect(404);
     });
@@ -219,16 +232,17 @@ describe('Property E2E Tests', () => {
         enabled: false,
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/guesty`)
         .send(updateDto)
         .expect(200);
 
-      const guestyConfig = response.body.pmsConfigs.find(
+      const body = response.body as PropertyResponse;
+      const guestyConfig = body.pmsConfigs.find(
         (config) => config.provider === 'guesty',
       );
-      expect(guestyConfig.externalPropertyId).toBe('updated-guesty-11111');
-      expect(guestyConfig.enabled).toBe(false);
+      expect(guestyConfig?.externalPropertyId).toBe('updated-guesty-11111');
+      expect(guestyConfig?.enabled).toBe(false);
     });
 
     it('should return 404 when PMS config not found', async () => {
@@ -237,7 +251,7 @@ describe('Property E2E Tests', () => {
         enabled: true,
       };
 
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/non-existent`)
         .send(updateDto)
         .expect(404);
@@ -247,7 +261,7 @@ describe('Property E2E Tests', () => {
   describe('GET /property/:id/webhook-eligibility - Check webhook eligibility', () => {
     beforeAll(async () => {
       // Re-enable Hostaway config for eligibility tests
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/hostaway`)
         .send({
           externalPropertyId: 'e2e-hostaway-12345',
@@ -256,60 +270,64 @@ describe('Property E2E Tests', () => {
     });
 
     it('should return eligible when property has enabled PMS config', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${createdPropertyId}/webhook-eligibility`)
         .expect(200);
 
-      expect(response.body.eligible).toBe(true);
-      expect(response.body.propertyId).toBe(createdPropertyId);
+      const body = response.body as WebhookEligibilityResponse;
+      expect(body.eligible).toBe(true);
+      expect(body.propertyId).toBe(createdPropertyId);
     });
 
     it('should return not eligible when all configs are disabled', async () => {
       // Disable all configs
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/hostaway`)
         .send({ enabled: false });
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/guesty`)
         .send({ enabled: false });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${createdPropertyId}/webhook-eligibility`)
         .expect(200);
 
-      expect(response.body.eligible).toBe(false);
-      expect(response.body.propertyId).toBe(createdPropertyId);
+      const body = response.body as WebhookEligibilityResponse;
+      expect(body.eligible).toBe(false);
+      expect(body.propertyId).toBe(createdPropertyId);
 
       // Re-enable for other tests
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${createdPropertyId}/pms-config/hostaway`)
         .send({ enabled: true });
     });
 
     it('should return not eligible for non-existent property', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get('/property/507f1f77bcf86cd799439011/webhook-eligibility')
         .expect(200);
 
-      expect(response.body.eligible).toBe(false);
+      const body = response.body as WebhookEligibilityResponse;
+      expect(body.eligible).toBe(false);
     });
   });
 
   describe('DELETE /property/:id/pms-config/:provider - Delete PMS config', () => {
     it('should remove Guesty PMS config from property', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .delete(`/property/${createdPropertyId}/pms-config/guesty`)
         .expect(200);
 
-      expect(response.body.pmsConfigs).toBeDefined();
-      const guestyConfig = response.body.pmsConfigs.find(
+      const body = response.body as PropertyResponse;
+      expect(body.pmsConfigs).toBeDefined();
+      const guestyConfig = body.pmsConfigs.find(
         (config) => config.provider === 'guesty',
       );
       expect(guestyConfig).toBeUndefined();
     });
 
     it('should return 404 for non-existent property', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .delete('/property/507f1f77bcf86cd799439011/pms-config/hostaway')
         .expect(404);
     });
@@ -325,12 +343,13 @@ describe('Property E2E Tests', () => {
         address: '999 Multi-Provider Ave',
       };
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post('/property')
         .send(createDto)
         .expect(201);
 
-      multiPmsPropertyId = response.body._id;
+      const body = response.body as PropertyResponse;
+      multiPmsPropertyId = body._id;
     });
 
     afterAll(async () => {
@@ -340,7 +359,7 @@ describe('Property E2E Tests', () => {
     });
 
     it('should add Hostaway PMS config', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post(`/property/${multiPmsPropertyId}/pms-config`)
         .send({
           provider: 'hostaway',
@@ -349,12 +368,13 @@ describe('Property E2E Tests', () => {
         })
         .expect(201);
 
-      expect(response.body.pmsConfigs).toHaveLength(1);
-      expect(response.body.pmsConfigs[0].provider).toBe('hostaway');
+      const body = response.body as PropertyResponse;
+      expect(body.pmsConfigs).toHaveLength(1);
+      expect(body.pmsConfigs[0].provider).toBe('hostaway');
     });
 
     it('should add Guesty PMS config alongside Hostaway', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .post(`/property/${multiPmsPropertyId}/pms-config`)
         .send({
           provider: 'guesty',
@@ -363,33 +383,33 @@ describe('Property E2E Tests', () => {
         })
         .expect(201);
 
-      expect(response.body.pmsConfigs).toHaveLength(2);
-      const providers = response.body.pmsConfigs.map((c) => c.provider);
+      const body = response.body as PropertyResponse;
+      expect(body.pmsConfigs).toHaveLength(2);
+      const providers = body.pmsConfigs.map((c) => c.provider);
       expect(providers).toContain('hostaway');
       expect(providers).toContain('guesty');
     });
 
     it('should be able to disable one provider while keeping the other', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${multiPmsPropertyId}/pms-config/hostaway`)
         .send({ enabled: false })
         .expect(200);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${multiPmsPropertyId}/pms-config`)
         .expect(200);
 
-      const hostawayConfig = response.body.find(
-        (c) => c.provider === 'hostaway',
-      );
-      const guestyConfig = response.body.find((c) => c.provider === 'guesty');
+      const body = response.body as PropertyPmsConfig[];
+      const hostawayConfig = body.find((c) => c.provider === 'hostaway');
+      const guestyConfig = body.find((c) => c.provider === 'guesty');
 
-      expect(hostawayConfig.enabled).toBe(false);
-      expect(guestyConfig.enabled).toBe(true);
+      expect(hostawayConfig?.enabled).toBe(false);
+      expect(guestyConfig?.enabled).toBe(true);
     });
 
     it('should be able to update external IDs independently', async () => {
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${multiPmsPropertyId}/pms-config/hostaway`)
         .send({
           externalPropertyId: 'new-hostaway-789',
@@ -397,62 +417,64 @@ describe('Property E2E Tests', () => {
         })
         .expect(200);
 
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${multiPmsPropertyId}/pms-config/guesty`)
         .send({
           externalPropertyId: 'new-guesty-101',
         })
         .expect(200);
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${multiPmsPropertyId}/pms-config`)
         .expect(200);
 
-      const hostawayConfig = response.body.find(
-        (c) => c.provider === 'hostaway',
-      );
-      const guestyConfig = response.body.find((c) => c.provider === 'guesty');
+      const body = response.body as PropertyPmsConfig[];
+      const hostawayConfig = body.find((c) => c.provider === 'hostaway');
+      const guestyConfig = body.find((c) => c.provider === 'guesty');
 
-      expect(hostawayConfig.externalPropertyId).toBe('new-hostaway-789');
-      expect(guestyConfig.externalPropertyId).toBe('new-guesty-101');
+      expect(hostawayConfig?.externalPropertyId).toBe('new-hostaway-789');
+      expect(guestyConfig?.externalPropertyId).toBe('new-guesty-101');
     });
 
     it('should remain eligible for webhooks with at least one enabled config', async () => {
       // Disable Hostaway, keep Guesty enabled
-      await request(app.getHttpServer())
+      await request(httpServer)
         .patch(`/property/${multiPmsPropertyId}/pms-config/hostaway`)
         .send({ enabled: false });
 
-      const response = await request(app.getHttpServer())
+      const response = await request(httpServer)
         .get(`/property/${multiPmsPropertyId}/webhook-eligibility`)
         .expect(200);
 
-      expect(response.body.eligible).toBe(true);
+      const body = response.body as WebhookEligibilityResponse;
+      expect(body.eligible).toBe(true);
     });
 
     it('should be able to remove configs individually', async () => {
       // Remove Hostaway
-      await request(app.getHttpServer())
+      await request(httpServer)
         .delete(`/property/${multiPmsPropertyId}/pms-config/hostaway`)
         .expect(200);
 
-      let response = await request(app.getHttpServer())
+      let response = await request(httpServer)
         .get(`/property/${multiPmsPropertyId}/pms-config`)
         .expect(200);
 
-      expect(response.body).toHaveLength(1);
-      expect(response.body[0].provider).toBe('guesty');
+      let body = response.body as PropertyPmsConfig[];
+      expect(body).toHaveLength(1);
+      expect(body[0].provider).toBe('guesty');
 
       // Remove Guesty
-      await request(app.getHttpServer())
+      await request(httpServer)
         .delete(`/property/${multiPmsPropertyId}/pms-config/guesty`)
         .expect(200);
 
-      response = await request(app.getHttpServer())
+      response = await request(httpServer)
         .get(`/property/${multiPmsPropertyId}/pms-config`)
         .expect(200);
 
-      expect(response.body).toHaveLength(0);
+      body = response.body as PropertyPmsConfig[];
+      expect(body).toHaveLength(0);
     });
   });
 });

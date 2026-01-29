@@ -1,5 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiCreatedResponse, ApiOkResponse, ApiForbiddenResponse, ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiForbiddenResponse,
+  ApiSecurity,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -19,11 +38,15 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Create a new user',
-    description: 'Super Admin can create any role. Admin can only create users with lower privileges.',
+    description:
+      'Super Admin can create any role. Admin can only create users with lower privileges.',
   })
   @ApiCreatedResponse({ description: 'User created successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - No valid token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions to create user with this role' })
+  @ApiForbiddenResponse({
+    description:
+      'Forbidden - Insufficient permissions to create user with this role',
+  })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Post()
   create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
@@ -53,12 +76,15 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Update a user',
-    description: 'Super Admin can update anyone. Admin can update everyone except Super Admins.',
+    description:
+      'Super Admin can update anyone. Admin can update everyone except Super Admins.',
   })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiOkResponse({ description: 'User updated successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - No valid token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions to update this user' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions to update this user',
+  })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Patch(':id')
   update(
@@ -72,12 +98,15 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Delete a user',
-    description: 'Super Admin can delete anyone. Admin can delete everyone except Super Admins.',
+    description:
+      'Super Admin can delete anyone. Admin can delete everyone except Super Admins.',
   })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiOkResponse({ description: 'User deleted successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - No valid token' })
-  @ApiForbiddenResponse({ description: 'Forbidden - Insufficient permissions to delete this user' })
+  @ApiForbiddenResponse({
+    description: 'Forbidden - Insufficient permissions to delete this user',
+  })
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string, @Req() req: any) {
@@ -92,7 +121,10 @@ export class UserController {
   @ApiOkResponse({ description: 'Password changed successfully' })
   @ApiUnauthorizedResponse({ description: 'Unauthorized - No valid token' })
   @Post('change-password/current')
-  changePassword(@Body() changePasswordDto: ChangePasswordDto, @Req() req: any) {
+  changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Req() req: any,
+  ) {
     const userId = req.user?.sub;
     return this.userService.changePassword(userId, changePasswordDto);
   }

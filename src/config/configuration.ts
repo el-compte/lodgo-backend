@@ -20,7 +20,9 @@ export default () => ({
     userPoolId: process.env.AWS_COGNITO_USER_POOL_ID,
     domain: process.env.AWS_COGNITO_DOMAIN,
     identityPoolId: process.env.AWS_COGNITO_IDENTITY_POOL_ID,
-    callbackUrl: process.env.COGNITO_CALLBACK_URL || 'http://localhost:4000/auth/cognito/callback',
+    callbackUrl:
+      process.env.COGNITO_CALLBACK_URL ||
+      'http://localhost:4000/auth/cognito/callback',
     logoutUrl: process.env.COGNITO_LOGOUT_URL || 'http://localhost:3001',
     fromEmail: process.env.COGNITO_FROM_EMAIL,
   },

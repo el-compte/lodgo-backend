@@ -37,7 +37,7 @@ export class HostawayWebhookService {
     switch (mappedEvent) {
       /** Handle listing updated event */
       case HostawayEvent.LISTING_UPDATED:
-        await this.handleListingUpdated(payload.data);
+        await this.handleListingUpdated(payload);
         break;
 
       /** Handle reservation created event */
@@ -59,12 +59,16 @@ export class HostawayWebhookService {
 
   /**
    * Handles listing.updated event and validates PMS config eligibility
-   * @param data - Webhook payload data containing listing information
+   * @param listingInformation - Webhook payload data containing listing information
    * @returns Promise<void>
    */
-  private async handleListingUpdated(data: any): Promise<void> {
+  private async handleListingUpdated(
+    listingInformation: HostawayWebhookDto,
+  ): Promise<void> {
     // Extract external property ID from webhook payload
-    const externalPropertyId = data?.id?.toString();
+    const externalPropertyId = (listingInformation?.data as { id: string })[
+      'id'
+    ]?.toString();
 
     if (!externalPropertyId) {
       this.logger.warn('External property ID missing in webhook payload');
@@ -90,29 +94,28 @@ export class HostawayWebhookService {
         'hostaway',
         externalPropertyId,
       );
-
+    const propertyId = String(property?._id);
     if (!isEligible) {
       this.logger.log(
-        `Property ${property._id} (Hostaway ID: ${externalPropertyId}) is not eligible for webhook processing - PMS config disabled or invalid`,
+        `Property ${propertyId} (Hostaway ID: ${externalPropertyId}) is not eligible for webhook processing - PMS config disabled or invalid`,
       );
       return;
     }
 
     // Property is eligible - proceed with webhook processing
     this.logger.log(
-      `Property ${property._id} (Hostaway ID: ${externalPropertyId}) is eligible for webhook processing`,
+      `Property ${propertyId} (Hostaway ID: ${externalPropertyId}) is eligible for webhook processing`,
     );
 
     // Validate listing data fields
-    if (!this.isListingDataValid(data)) {
+    if (!this.isListingDataValid(listingInformation)) {
       this.logger.warn(
-        `Listing data validation failed for property ${property._id}`,
+        `Listing data validation failed for property ${propertyId}`,
       );
       return;
     }
-
     this.logger.log(
-      `Successfully processing webhook for property ${property._id}`,
+      `Successfully processing webhook for property ${propertyId}`,
     );
     // TODO: Add actual listing update logic here
   }
@@ -134,7 +137,7 @@ export class HostawayWebhookService {
    * @param listing - Listing data from webhook
    * @returns true if valid, false otherwise
    */
-  private isListingDataValid(listing: any): boolean {
+  private isListingDataValid(listing: HostawayWebhookDto): boolean {
     const requiredFields = [
       'id',
       'name',
@@ -150,16 +153,17 @@ export class HostawayWebhookService {
 
     // Check all required fields are present and non-empty
     for (const field of requiredFields) {
-      if (!listing[field]) {
+      if (!listing.data[field]) {
         this.logger.warn(`Missing required field: ${field}`);
         return false;
       }
     }
-
+    const specialStatus = (listing?.data as { specialStatus?: string })
+      ?.specialStatus;
     // Check status completed
-    if (listing.specialStatus?.toLowerCase() !== 'completed') {
+    if (specialStatus?.toLowerCase() !== 'completed') {
       this.logger.warn(
-        `Listing status is not completed: ${listing.specialStatus}`,
+        `Listing status is not completed: ${listing.data.specialStatus}`,
       );
       return false;
     }

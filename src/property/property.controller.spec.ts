@@ -12,7 +12,7 @@ describe('PropertyController', () => {
       save: jest.fn().mockResolvedValue({ ...dto }),
     };
   } as any;
-  
+
   mockPropertyModel.find = jest.fn();
   mockPropertyModel.findById = jest.fn();
   mockPropertyModel.findOne = jest.fn();

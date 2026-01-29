@@ -258,7 +258,8 @@ export class PropertyService {
     const currentConfig = property.pmsConfigs[configIndex];
     property.pmsConfigs[configIndex] = {
       provider: currentConfig.provider,
-      externalPropertyId: updates.externalPropertyId ?? currentConfig.externalPropertyId,
+      externalPropertyId:
+        updates.externalPropertyId ?? currentConfig.externalPropertyId,
       enabled: updates.enabled ?? currentConfig.enabled,
     };
 

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './entities/user.entity';
@@ -20,7 +25,12 @@ export class UserService {
     // Check permissions if requesting user role is provided
     if (requestingUserRole) {
       const targetRole = createUserDto.role || UserRole.USER;
-      if (!this.permissionService.canCreateUserWithRole(requestingUserRole, targetRole)) {
+      if (
+        !this.permissionService.canCreateUserWithRole(
+          requestingUserRole,
+          targetRole,
+        )
+      ) {
         throw new ForbiddenException(
           'You do not have permission to create a user with this role. Your role cannot create users of equal or higher privilege level.',
         );
@@ -71,12 +81,21 @@ export class UserService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto, requestingUserRole?: UserRole) {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+    requestingUserRole?: UserRole,
+  ) {
     const targetUser = await this.findOne(id);
 
     // Check permissions if requesting user role is provided
     if (requestingUserRole) {
-      if (!this.permissionService.canDeleteOrUpdateUser(requestingUserRole, targetUser.role)) {
+      if (
+        !this.permissionService.canDeleteOrUpdateUser(
+          requestingUserRole,
+          targetUser.role,
+        )
+      ) {
         throw new ForbiddenException(
           'You do not have permission to update this user. Your role cannot modify users of equal or higher privilege level.',
         );
@@ -98,7 +117,12 @@ export class UserService {
 
     // Check permissions if requesting user role is provided
     if (requestingUserRole) {
-      if (!this.permissionService.canDeleteOrUpdateUser(requestingUserRole, targetUser.role)) {
+      if (
+        !this.permissionService.canDeleteOrUpdateUser(
+          requestingUserRole,
+          targetUser.role,
+        )
+      ) {
         throw new ForbiddenException(
           'You do not have permission to delete this user. Your role cannot delete users of equal or higher privilege level.',
         );
@@ -121,7 +145,9 @@ export class UserService {
 
     // Validate that new password and confirm password match
     if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
-      throw new BadRequestException('New password and confirm password do not match');
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
     }
 
     // Verify current password
@@ -162,7 +188,8 @@ export class UserService {
 
   async generateTemporaryPassword(): Promise<string> {
     // Generate a temporary password (12 random characters)
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+    const chars =
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
     let tempPassword = '';
     for (let i = 0; i < 12; i++) {
       tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));

@@ -30,7 +30,7 @@ describe('PropertyService', () => {
       save: jest.fn().mockResolvedValue({ ...dto, ...mockProperty }),
     };
   } as any;
-  
+
   mockPropertyModel.find = jest.fn();
   mockPropertyModel.findById = jest.fn();
   mockPropertyModel.findOne = jest.fn();
@@ -112,9 +112,9 @@ describe('PropertyService', () => {
         exec: jest.fn().mockResolvedValue(null),
       } as any);
 
-      await expect(
-        service.findOne('507f1f77bcf86cd799439011'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('507f1f77bcf86cd799439011')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -125,7 +125,9 @@ describe('PropertyService', () => {
       };
 
       jest.spyOn(model, 'findByIdAndUpdate').mockReturnValue({
-        exec: jest.fn().mockResolvedValue({ ...mockProperty, ...updatePropertyDto }),
+        exec: jest
+          .fn()
+          .mockResolvedValue({ ...mockProperty, ...updatePropertyDto }),
       } as any);
 
       const result = await service.update(
@@ -171,9 +173,9 @@ describe('PropertyService', () => {
         exec: jest.fn().mockResolvedValue(null),
       } as any);
 
-      await expect(
-        service.remove('507f1f77bcf86cd799439011'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove('507f1f77bcf86cd799439011')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -300,9 +302,7 @@ describe('PropertyService', () => {
     });
 
     it('should return false when property not found', async () => {
-      jest
-        .spyOn(service, 'findOne')
-        .mockRejectedValue(new NotFoundException());
+      jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException());
 
       const result = await service.isPropertyEligibleForWebhook(
         '507f1f77bcf86cd799439011',
@@ -327,9 +327,7 @@ describe('PropertyService', () => {
     });
 
     it('should return false when property not found', async () => {
-      jest
-        .spyOn(service, 'findByExternalPropertyId')
-        .mockResolvedValue(null);
+      jest.spyOn(service, 'findByExternalPropertyId').mockResolvedValue(null);
 
       const result = await service.isPropertyEligibleForWebhookByExternalId(
         'hostaway',
@@ -414,9 +412,7 @@ describe('PropertyService', () => {
         }),
       };
 
-      jest
-        .spyOn(service, 'findOne')
-        .mockResolvedValue(existingProperty as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(existingProperty as any);
 
       const updatedConfig = {
         provider: 'hostaway' as const,
@@ -456,9 +452,7 @@ describe('PropertyService', () => {
         }),
       };
 
-      jest
-        .spyOn(service, 'findOne')
-        .mockResolvedValue(existingProperty as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(existingProperty as any);
 
       const result = await service.updatePmsConfig(
         '507f1f77bcf86cd799439011',
@@ -515,9 +509,7 @@ describe('PropertyService', () => {
         }),
       };
 
-      jest
-        .spyOn(service, 'findOne')
-        .mockResolvedValue(existingProperty as any);
+      jest.spyOn(service, 'findOne').mockResolvedValue(existingProperty as any);
 
       const result = await service.removePmsConfig(
         '507f1f77bcf86cd799439011',

@@ -20,6 +20,9 @@ export class AuthResponseDto {
   @ApiProperty({ description: 'User role', enum: UserRole })
   role: UserRole;
 
-  @ApiProperty({ description: 'Whether this is the first login and password change is required' })
+  @ApiProperty({
+    description:
+      'Whether this is the first login and password change is required',
+  })
   isFirstLogin: boolean;
 }
