@@ -31,7 +31,10 @@ export class AdminPermissionMiddleware implements NestMiddleware {
       throw new ForbiddenException('User not authenticated');
     }
 
-    if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
+    if (
+      req.user.role !== UserRole.ADMIN &&
+      req.user.role !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Admin access required');
     }
 
@@ -61,7 +64,11 @@ export class AssetManagerPermissionMiddleware implements NestMiddleware {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const allowedRoles = [UserRole.ASSET_MANAGER, UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    const allowedRoles = [
+      UserRole.ASSET_MANAGER,
+      UserRole.ADMIN,
+      UserRole.SUPER_ADMIN,
+    ];
     if (!allowedRoles.includes(req.user.role)) {
       throw new ForbiddenException('Asset manager access required');
     }
