@@ -26,4 +26,20 @@ export default () => ({
     logoutUrl: process.env.COGNITO_LOGOUT_URL || 'http://localhost:3001',
     fromEmail: process.env.COGNITO_FROM_EMAIL,
   },
+  webhooks: {
+    hostaway: {
+      secret: process.env.HOSTAWAY_WEBHOOK_SECRET,
+      rateLimit: {
+        maxRequests: process.env.HOSTAWAY_RATE_LIMIT_MAX ?? '100',
+        windowMs: process.env.HOSTAWAY_RATE_LIMIT_WINDOW ?? '60000',
+      },
+    },
+    guesty: {
+      secret: process.env.GUESTY_WEBHOOK_SECRET,
+      rateLimit: {
+        maxRequests: process.env.GUESTY_RATE_LIMIT_MAX ?? '100',
+        windowMs: process.env.GUESTY_RATE_LIMIT_WINDOW ?? '60000',
+      },
+    },
+  },
 });
