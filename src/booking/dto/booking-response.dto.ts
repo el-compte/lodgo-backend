@@ -59,7 +59,7 @@ export class BookingResponseDto {
 
   @ApiPropertyOptional({
     description: 'Total price for the booking',
-    example: 450.0,
+    example: 450,
   })
   totalPrice?: number;
 
