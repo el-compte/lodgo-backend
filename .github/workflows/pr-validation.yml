@@ -1,0 +1,72 @@
+name: Pull Request Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        env:
+          MONGO_INITDB_DATABASE: test
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm install
+
+      # - name: Lint code
+      #   run: npm run lint
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm run test
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          JWT_SECRET: test-jwt-secret-key-for-ci
+          NODE_ENV: test
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test-e2e
+          JWT_SECRET: test-jwt-secret-key-for-ci
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        if: matrix.node-version == '20.x'
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false

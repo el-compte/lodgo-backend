@@ -2,6 +2,8 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { HostawayWebhookService } from './hostaway-webhook.service';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { HostawaySignatureGuard } from './guards/hostaway-signature.guard';
+import { WebhookRateLimitGuard } from './guards/webhook-rate-limit.guard';
+import configuration from '../../config/configuration';
 
 @Controller('webhooks/hostaway')
 /**
@@ -14,7 +16,16 @@ export class HostawayWebhookController {
   constructor(private readonly webhookService: HostawayWebhookService) {}
 
   @Post()
-  @UseGuards(HostawaySignatureGuard)
+  @UseGuards(
+    new WebhookRateLimitGuard(
+      Number.parseInt(
+        configuration().webhooks.hostaway.rateLimit.maxRequests,
+        10,
+      ),
+      Number.parseInt(configuration().webhooks.hostaway.rateLimit.windowMs, 10),
+    ),
+    HostawaySignatureGuard,
+  )
   @HttpCode(200)
   /**
    * Handles incoming Hostaway webhook POST requests
@@ -22,9 +33,9 @@ export class HostawayWebhookController {
    * @param body HostawayWebhookDto containing the webhook payload
    * @returns {Object} Acknowledgment of receipt
    */
-  handleHostawayWebhook(@Body() body: HostawayWebhookDto) {
+  async handleHostawayWebhook(@Body() body: HostawayWebhookDto) {
     /** this will be update as async function at the feature */
-    this.webhookService.handleWebhook(body);
+    await this.webhookService.handleWebhook(body);
     return { received: true };
   }
 }
