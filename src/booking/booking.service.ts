@@ -65,6 +65,7 @@ export class BookingService {
   /**
    * Create a new booking with time-blocking check
    * Implements conflict detection algorithm from TIME-BLOCKING-ALGORITHM.md
+   * If a booking with the same externalReservationId and provider exists, it will be updated instead
    *
    * @param bookingData - Booking creation input
    * @returns Object with booking, conflict status, and optional time block
@@ -82,6 +83,12 @@ export class BookingService {
       throw new BadRequestException('Missing required booking fields');
     }
 
+    // Step 0: Check if booking with same externalReservationId and provider already exists
+    const existingBooking = await this.bookingModel.findOne({
+      externalReservationId: bookingData.externalReservationId,
+      provider: bookingData.provider,
+    });
+
     // Step 1: Calculate nights
     const numberOfNights = this.calculateNights(
       bookingData.checkInDate,
@@ -89,13 +96,15 @@ export class BookingService {
     );
 
     // Step 2: Check for conflicting reservations
+    // If updating existing booking, exclude it from conflict check
     const conflicts = await this.findConflictingReservations(
       bookingData.propertyId,
       bookingData.checkInDate,
       bookingData.checkOutDate,
+      existingBooking?._id.toString(),
     );
 
-    // Step 3: Create booking
+    // Step 3: Create or update booking
     const bookingPayload: Partial<Booking> = {
       ...bookingData,
       propertyId: new Types.ObjectId(bookingData.propertyId),
@@ -106,8 +115,31 @@ export class BookingService {
           : ReservationStatus.CONFIRMED,
     };
 
-    const booking = new this.bookingModel(bookingPayload);
-    await booking.save();
+    let booking: BookingDocument;
+
+    if (existingBooking) {
+      // Update existing booking
+      Object.assign(existingBooking, bookingPayload);
+      booking = await existingBooking.save();
+
+      this.logger.log({
+        message: 'Booking updated',
+        bookingId: booking._id,
+        externalReservationId: booking.externalReservationId,
+        propertyId: booking.propertyId,
+      });
+    } else {
+      // Create new booking
+      const newBooking = new this.bookingModel(bookingPayload);
+      booking = await newBooking.save();
+
+      this.logger.log({
+        message: 'Booking created',
+        bookingId: booking._id,
+        externalReservationId: booking.externalReservationId,
+        propertyId: booking.propertyId,
+      });
+    }
 
     // Step 4: If conflicts found, create time block
     if (conflicts.length > 0) {
@@ -126,13 +158,6 @@ export class BookingService {
       return { booking, hasConflict: true, timeBlock };
     }
 
-    this.logger.log({
-      message: 'Booking created successfully',
-      bookingId: booking._id,
-      externalReservationId: booking.externalReservationId,
-      propertyId: booking.propertyId,
-    });
-
     return { booking, hasConflict: false };
   }
 
@@ -143,7 +168,7 @@ export class BookingService {
    * @param propertyId - Property ID to check
    * @param checkIn - Check-in date
    * @param checkOut - Check-out date
-   * @param excludeId - Optional reservation ID to exclude from results
+   * @param excludeId - Optional booking ObjectId to exclude from results
    * @returns Array of conflicting bookings
    */
   private async findConflictingReservations(
@@ -164,7 +189,7 @@ export class BookingService {
     };
 
     if (excludeId) {
-      query.externalReservationId = { $ne: excludeId };
+      query._id = { $ne: new Types.ObjectId(excludeId) };
     }
 
     return this.bookingModel.find(query).exec();

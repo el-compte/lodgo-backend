@@ -130,7 +130,6 @@ export class Booking {
     required: true,
     enum: Object.values(ReservationStatus),
     default: ReservationStatus.CONFIRMED,
-    index: true,
   })
   reservationStatus: ReservationStatus;
 
