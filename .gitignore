@@ -58,3 +58,4 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 # lock dependencies
 package-lock.json
 yarn.lock
+*-TASKS.md

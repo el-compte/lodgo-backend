@@ -6,7 +6,9 @@ import { User, UserSchema } from './entities/user.entity';
 import { PermissionService } from './services/permission.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+  ],
   controllers: [UserController],
   providers: [UserService, PermissionService],
   exports: [UserService, PermissionService],
