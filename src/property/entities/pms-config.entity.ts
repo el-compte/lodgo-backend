@@ -15,6 +15,7 @@ interface PropertyPmsConfig {
   provider: 'hostaway' | 'guesty';
   externalPropertyId: string;
   enabled: boolean;
+  lastSyncedAt?: Date;
 }
 
 /**
@@ -27,6 +28,7 @@ interface PropertyPmsConfig {
  * @property {('hostaway' | 'guesty')} provider - The PMS provider name.
  * @property {string} externalPropertyId - The unique identifier of the property in the PMS.
  * @property {boolean} enabled - Flag indicating if the PMS integration is active.
+ * @property {Date} [lastSyncedAt] - Timestamp of the last synchronization.
  * @default enabled - true
  * @memberof PropertyPmsConfig
  */
@@ -38,6 +40,8 @@ const PmsConfigSchema = new Schema<PropertyPmsConfig>(
     externalPropertyId: { type: String, required: true },
     /** Flag indicating if the PMS integration is active */
     enabled: { type: Boolean, default: true },
+    /** Timestamp of the last synchronization */
+    lastSyncedAt: { type: Date },
   },
   { _id: false },
 );
