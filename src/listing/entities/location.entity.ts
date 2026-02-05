@@ -14,7 +14,7 @@ interface ILocation {
   fullAddress?: string;
   publicAddress?: string;
   floor: Number;
-  roomnumber: string;
+  roomNumber: string;
   coordinates?: {
     lat: number;
     lng: number;
@@ -35,7 +35,7 @@ const LocationSchema = new Schema<ILocation>(
     fullAddress: { type: String },
     publicAddress: { type: String },
     floor: { type: Number },
-    roomnumber: { type: String },
+    roomNumber: { type: String },
     coordinates: {
       lat: { type: Number },
       lng: { type: Number },

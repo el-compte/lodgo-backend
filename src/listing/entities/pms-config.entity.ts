@@ -1,43 +1,43 @@
 import { Schema } from 'mongoose';
 
 /**
- * Property PMS (Property Management System) Configuration Interface
+ * Listing PMS (Listing Management System) Configuration Interface
  * Defines the structure for storing PMS configuration details for properties.
  * Each configuration includes the PMS provider, the external property ID,
  * and whether the integration is enabled.
  * @interface
- * @namespace PropertyPmsConfig
+ * @namespace ListingPmsConfig
  * @property {('hostaway' | 'guesty')} provider - The PMS provider name.
- * @property {string} externalPropertyId - The unique identifier of the property in the PMS.
+ * @property {string} externalListingId - The unique identifier of the property in the PMS.
  * @property {boolean} enabled - Flag indicating if the PMS integration is active.
  */
-interface PropertyPmsConfig {
+interface ListingPmsConfig {
   provider: 'hostaway' | 'guesty';
-  externalPropertyId: string;
+  externalListingId: string;
   enabled: boolean;
   lastSyncedAt?: Date;
 }
 
 /**
- * Mongoose Schema for Property PMS Configuration
+ * Mongoose Schema for Listing PMS Configuration
  * Defines the schema for storing PMS configuration details in MongoDB.
- * @see PropertyPmsConfig
+ * @see ListingPmsConfig
  * @schema
  * @name PmsConfigSchema
- * @constant {Schema<PropertyPmsConfig>} PmsConfigSchema
+ * @constant {Schema<ListingPmsConfig>} PmsConfigSchema
  * @property {('hostaway' | 'guesty')} provider - The PMS provider name.
- * @property {string} externalPropertyId - The unique identifier of the property in the PMS.
+ * @property {string} externalListingId - The unique identifier of the property in the PMS.
  * @property {boolean} enabled - Flag indicating if the PMS integration is active.
  * @property {Date} [lastSyncedAt] - Timestamp of the last synchronization.
  * @default enabled - true
- * @memberof PropertyPmsConfig
+ * @memberof ListingPmsConfig
  */
-const PmsConfigSchema = new Schema<PropertyPmsConfig>(
+const PmsConfigSchema = new Schema<ListingPmsConfig>(
   {
-    /** Property Management System provider */
+    /** Listing Management System provider */
     provider: { type: String, enum: ['hostaway', 'guesty'], required: true },
     /** Unique identifier of the property in the PMS */
-    externalPropertyId: { type: String, required: true },
+    externalListingId: { type: String, required: true },
     /** Flag indicating if the PMS integration is active */
     enabled: { type: Boolean, default: true },
     /** Timestamp of the last synchronization */
@@ -47,4 +47,4 @@ const PmsConfigSchema = new Schema<PropertyPmsConfig>(
 );
 
 export { PmsConfigSchema };
-export type { PropertyPmsConfig };
+export type { ListingPmsConfig };

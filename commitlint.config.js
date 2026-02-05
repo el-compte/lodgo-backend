@@ -8,16 +8,8 @@ module.exports = {
       ['feat', 'fix', 'chore', 'docs', 'refactor', 'test', 'perf', 'ci', 'build'],
     ],
 
-    // Enforce ticket ID at the END of the subject
-    'subject-pattern': [
-      2,
-      'always',
-      '^.+ #[A-Z]+-[0-9]+$',
-    ],
+    // Custom subject pattern is not supported by commitlint core rules. Use only supported rules.
 
-    // Custom error message (DX improvement)
-    'subject-pattern-error': [
-      'Commit message must end with a ticket ID, e.g. "#BOOK-123"',
-    ],
+    // Custom error messages are not supported directly in commitlint rules.
   },
 };

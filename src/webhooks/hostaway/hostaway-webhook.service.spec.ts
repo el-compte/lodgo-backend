@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import { HostawayWebhookService } from './hostaway-webhook.service';
-import { PropertyService } from '../../property/property.service';
+import { PropertyService } from '../../listing/listing.service';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { WebhookRetryService } from './services/webhook-retry.service';
 import { WebhookProcessingStatus } from './interfaces/webhook-processing.interface';

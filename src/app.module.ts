@@ -7,7 +7,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { EnvironmentService } from './config/environment.service';
-import { PropertyModule } from './property/property.module';
+import { ListingModule } from './listing/listing.module';
 import configuration from './config/configuration';
 import { HostawayWebhookModule } from './webhooks/hostaway/hostaway-webhook.module';
 
@@ -26,7 +26,7 @@ import { HostawayWebhookModule } from './webhooks/hostaway/hostaway-webhook.modu
     }),
     UserModule,
     AuthModule,
-    PropertyModule,
+    ListingModule,
     HostawayWebhookModule,
   ],
   controllers: [AppController],

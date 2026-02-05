@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HostawayWebhookDto } from './dto/hostaway-webhook.dto';
 import { HostawayEvent, mapHostawayEvent } from './hostaway-event.mapper';
-import { PropertyService } from '../../property/property.service';
+import { ListingService } from '../../listing/listing.service';
 import { WebhookRetryService } from './services/webhook-retry.service';
 import {
   WebhookProcessingResult,
@@ -13,7 +13,7 @@ export class HostawayWebhookService {
   private readonly logger = new Logger(HostawayWebhookService.name);
 
   constructor(
-    private readonly propertyService: PropertyService,
+    private readonly propertyService: ListingService,
     private readonly retryService: WebhookRetryService,
   ) {}
 
@@ -183,7 +183,7 @@ export class HostawayWebhookService {
     }
 
     const isEligible =
-      await this.propertyService.isPropertyEligibleForWebhookByExternalId(
+      await this.propertyService.isListingEligibleForWebhookByExternalId(
         'hostaway',
         externalPropertyId,
       );
