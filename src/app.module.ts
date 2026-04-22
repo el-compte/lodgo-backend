@@ -10,6 +10,7 @@ import { EnvironmentService } from './config/environment.service';
 import { PropertyModule } from './property/property.module';
 import configuration from './config/configuration';
 import { HostawayWebhookModule } from './webhooks/hostaway/hostaway-webhook.module';
+import { BookingModule } from './booking/booking.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HostawayWebhookModule } from './webhooks/hostaway/hostaway-webhook.modu
     UserModule,
     AuthModule,
     PropertyModule,
+    BookingModule,
     HostawayWebhookModule,
   ],
   controllers: [AppController],

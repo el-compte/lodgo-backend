@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HostawayWebhookController } from './hostaway-webhook.controller';
 import { HostawayWebhookService } from './hostaway-webhook.service';
 import { PropertyModule } from '../../property/property.module';
+import { BookingModule } from '../../booking/booking.module';
 import { WebhookRetryService } from './services/webhook-retry.service';
 
 /**
@@ -11,7 +12,7 @@ import { WebhookRetryService } from './services/webhook-retry.service';
  * including controller, service, and retry logic.
  */
 @Module({
-  imports: [PropertyModule],
+  imports: [PropertyModule, BookingModule],
   controllers: [HostawayWebhookController],
   providers: [HostawayWebhookService, WebhookRetryService],
   exports: [WebhookRetryService],
